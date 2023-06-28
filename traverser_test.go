@@ -138,7 +138,9 @@ func TestTraverseArray(t *testing.T) {
 	}
 
 }
-
+func MakeMap(key string, content interface{}) map[string]interface{} {
+	return map[string]interface{}{key: content}
+}
 func TestTraverseAggregate(t *testing.T) {
 	input := "$.$sum($.ii)"
 	source := strings.NewReader(input)
@@ -183,6 +185,33 @@ func TestTraverseAggregate(t *testing.T) {
 		t.Fail()
 	}
 	if kk != 0.30000000000000004 {
+		t.Log("Content is", kk)
+		t.Fail()
+	}
+
+	// case 3
+	input = "$.ii[1].$sum($.name)"
+	source = strings.NewReader(input)
+	parser = jsontoloyo.NewParser(source)
+	sourceMap["ii"] = []interface{}{0, []map[string]interface{}{
+		MakeMap("name", 10),
+		MakeMap("name", 20),
+		MakeMap("name", 30),
+	}, 2, 3, 4}
+	selectors = []*jsontoloyo.Selector{}
+	err = parser.Parse(&selectors)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+	fmt.Println(len(selectors))
+	traverser = jsontoloyo.NewTraverser(sourceMap, selectors)
+	kk, err = traverser.Traverse()
+	if err != nil {
+		t.Log(err.Error())
+		t.Fail()
+	}
+	if kk != 60.0 {
 		t.Log("Content is", kk)
 		t.Fail()
 	}

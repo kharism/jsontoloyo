@@ -13,6 +13,31 @@ type Traverser struct {
 func NewTraverser(oriJson map[string]interface{}, Selector []*Selector) *Traverser {
 	return &Traverser{OriJson: oriJson, Selector: Selector}
 }
+func GetValueArray(json []map[string]interface{}, selector []*Selector) (interface{}, error) {
+	// fmt.Println(selector, json)
+	// do something here so we can return []primitives
+	newSelector := []*Selector{}
+	newSelector = append(newSelector, &Selector{Token: DOLLARSIGN})
+	newSelector = append(newSelector, selector[0].FunctionParam...)
+	outputPrimitives := []interface{}{}
+	traverser := Traverser{Selector: newSelector}
+	for _, v := range json {
+		traverser.OriJson = v
+		val, e := traverser.Traverse()
+		if e != nil {
+			return nil, e
+		}
+		outputPrimitives = append(outputPrimitives, val)
+	}
+	// fmt.Println(outputPrimitives)
+	switch selector[0].Token {
+	case AVG:
+		return Avg(outputPrimitives), nil
+	case SUM:
+		return Sum(outputPrimitives), nil
+	}
+	return outputPrimitives, nil
+}
 func GetValue(json map[string]interface{}, selector []*Selector) (interface{}, error) {
 	// use iterative traversal so we can save stack memory here
 	curJson := json
@@ -127,7 +152,14 @@ func (t *Traverser) Traverse() (interface{}, error) {
 						} else {
 							// fmt.Println(SubData)
 							// go deeper
-							return GetValue(SubData.Interface().(map[string]interface{}), t.Selector[5:])
+							//fmt.Println(SubData.Type().Kind())
+							if _, ok := SubData.Interface().(map[string]interface{}); ok {
+								return GetValue(SubData.Interface().(map[string]interface{}), t.Selector[5:])
+							} else if _, ok := SubData.Interface().([]map[string]interface{}); ok {
+								// it means we do some aggregation function on array of struct
+								return GetValueArray(SubData.Interface().([]map[string]interface{}), t.Selector[5:])
+							}
+
 						}
 					} else {
 						// return as is
@@ -186,6 +218,8 @@ func Avg(param interface{}) float64 {
 				result += value.Float()
 			} else if value.CanInt() {
 				result += float64(value.Int())
+			} else if value.CanInterface() {
+				result += float64(value.Interface().(int))
 			}
 		}
 	}
@@ -201,6 +235,8 @@ func Sum(param interface{}) float64 {
 				result += value.Float()
 			} else if value.CanInt() {
 				result += float64(value.Int())
+			} else if value.CanInterface() {
+				result += float64(value.Interface().(int))
 			}
 		}
 	}
