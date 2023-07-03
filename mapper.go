@@ -50,14 +50,14 @@ func (m *Mappers) Mapping(source, sink map[string]interface{}) (err error) {
 	return nil
 }
 
-func (m *Mappers) MappingArray(source, sink []map[string]interface{}) (err error) {
-	for _, src := range source {
+func (m *Mappers) MappingArray(source, sink *[]map[string]interface{}) (err error) {
+	for _, src := range *source {
 		newItem := map[string]interface{}{}
 		err := m.Mapping(src, newItem)
 		if err != nil {
 			return err
 		}
-		sink = append(sink, newItem)
+		*sink = append(*sink, newItem)
 	}
 	return nil
 }

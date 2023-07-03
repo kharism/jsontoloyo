@@ -27,3 +27,32 @@ func TestMapping(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestMappingArray(t *testing.T) {
+	source := []map[string]interface{}{
+		map[string]interface{}{
+			"scores": []int{10, 10, 40},
+		},
+		map[string]interface{}{
+			"scores": []int{10, 20},
+		},
+	}
+	sink := []map[string]interface{}{}
+	mappings := jsontoloyo.NewMappers()
+	mappings.AddMapping("avg_score", "$.$avg($.scores)")
+	err := mappings.MappingArray(&source, &sink)
+	if err != nil {
+		t.Log("err", err.Error())
+		t.Fail()
+	}
+	if len(sink) != 2 {
+		t.FailNow()
+	}
+	if sink[0]["avg_score"] != 20.00 {
+		t.Fail()
+	}
+	if sink[1]["avg_score"] != 15.00 {
+		t.Fail()
+	}
+	//t.Log(sink)
+}
